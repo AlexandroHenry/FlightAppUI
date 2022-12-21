@@ -47,7 +47,26 @@ struct Home: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(content: {
-            ZStack {
+            ZStack(alignment: .bottom) {
+                
+                ZStack {
+                    if animator.showClouds {
+                        Group {
+                            // MARK: Cloud View
+                            /// Multiple Cloud for Better Animation
+                            CloudView(delay: 1, size: size)
+                                .offset(y: size.height * -0.1)
+                            CloudView(delay: 0, size: size)
+                                .offset(y: size.height * 0.3)
+                            CloudView(delay: 2.5, size: size)
+                                .offset(y: size.height * 0.3)
+                            CloudView(delay: 2.5, size: size)
+                                .offset(y: size.height * 0.2)
+                        }
+                    }
+                }
+                .frame(maxHeight: .infinity)
+                
                 if animator.showLoadingView {
                     BackgroundView()
                         .transition(.scale)
@@ -62,22 +81,47 @@ struct Home: View {
                     /// GeometryReader can be used to extract CGRect from the Anchor.
                     let rect = proxy[anchor]
                     let planeRect = animator.initialPlanePosition
+                    let status = animator.currentPaymentStatus
+                    let animationStatus = status == .finished
                     Image("Airplane")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: planeRect.width, height: planeRect.height)
+                        /// Flight Movement Animation
+                        .rotationEffect(.init(degrees: animationStatus ? -10 : 0))
+                        .shadow(color: .black.opacity(0.25), radius: 1, x: animationStatus ? -430 : 0, y: animationStatus ? 170 : 0)
                         .offset(x: planeRect.minX, y: planeRect.minY)
                         /// Moving Plane a bit dow to look like its center when the 3D Animation is Happening
                         .offset(y: animator.startAnimation ? 50 : 0)
                         .onAppear {
                             animator.initialPlanePosition = rect
                         }
+                        .animation(.easeInOut(duration: animationStatus ? 3.5 : 2.5), value: animationStatus)
                 }
+            }
+        })
+        /// One Overlayed Cloud Over the Airplane
+        .overlay(content: {
+            if animator.showClouds {
+                CloudView(delay: 2.2, size: size)
+                    .offset(y: -size.height * 0.25)
             }
         })
         .background {
             Color("BG")
                 .ignoresSafeArea()
+        }
+        /// Whenever the Status Changed to Finished
+        /// Toggling the Cloud View
+        .onChange(of: animator.currentPaymentStatus) { newValue in
+            if newValue == .finished {
+                animator.showClouds = true
+                
+                /// Enabling Final View After Some Time
+                DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                    
+                }
+            }
         }
     }
     
@@ -233,7 +277,9 @@ struct Home: View {
         
         /// Showing Loading View After Some time
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            animator.showLoadingView = true
+            withAnimation(.easeInOut(duration: 0.7)) {
+                animator.showLoadingView = true
+            }
         }
     }
     
@@ -343,7 +389,6 @@ struct Home: View {
                 }
             }
         })
-        .frame(maxHeight: .infinity, alignment: .bottom)
         .padding(.bottom, size.height * 0.15)
     }
 }
@@ -351,6 +396,30 @@ struct Home: View {
 struct Home_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
+    }
+}
+
+// MARK: Cloud View
+struct CloudView: View {
+    var delay: Double
+    var size: CGSize
+    
+    @State private var moveCloud: Bool = false
+    
+    var body: some View {
+        ZStack {
+            Image("Cloud")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: size.width * 3)
+                .offset(x: moveCloud ? -size.width * 2 : size.width * 2)
+        }
+        .onAppear {
+            /// Duration  = Speed of The Move ment of the Cloud
+            withAnimation(.easeInOut(duration: 6.5).delay(delay)) {
+                moveCloud.toggle()
+            }
+        }
     }
 }
 
@@ -369,6 +438,12 @@ class Animator: ObservableObject {
     
     ///  Loading Status
     @Published var showLoadingView: Bool = false
+    
+    /// Cloud View Status
+    @Published var showClouds: Bool = false
+    
+    /// Final View Status
+    @Published var showFinalView: Bool = false
 }
 
 // MARK: Anchor Preference Key

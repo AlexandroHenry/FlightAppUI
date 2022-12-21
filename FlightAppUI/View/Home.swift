@@ -17,31 +17,64 @@ struct Home: View {
     @State var offsetY: CGFloat = 0
     @State var currentCardIndex: CGFloat = 0
     
+    // MARK: Animator State Object
+    @StateObject var animator: Animator = .init()
+    
     var body: some View {
         VStack(spacing: 0) {
             HeaderView()
                 .overlay(alignment: .bottomTrailing, content: {
-                    Button {
-                        
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.gray)
-                            .frame(width: 40, height: 40)
-                            .background {
-                                Circle()
-                                    .fill(.white)
-                                    .shadow(color: .black.opacity(0.35), radius: 5, x: 5, y: 5)
-                            }
-                    }
-                    .offset(x: -15, y: 15)
-                })
+                Button {
+                    
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.gray)
+                        .frame(width: 40, height: 40)
+                        .background {
+                            Circle()
+                                .fill(.white)
+                                .shadow(color: .black.opacity(0.35), radius: 5, x: 5, y: 5)
+                        }
+                }
+                .offset(x: -15, y: 15)
+                .offset(x: animator.startAnimation ? 80 : 0)
+            })
                 .zIndex(1)
             PaymentCardsView()
                 .zIndex(0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(content: {
+            ZStack {
+                if animator.showLoadingView {
+                    BackgroundView()
+                        .transition(.scale)
+                }
+            }
+        })
+        .overlayPreferenceValue(RectKey.self, { value in
+            if let anchor = value["PLANEBOUNDS"] {
+                GeometryReader { proxy in
+                    // MARK: Extracting Rect From Anchor Using GeometryReader
+                    /// Why GeometryReader?
+                    /// GeometryReader can be used to extract CGRect from the Anchor.
+                    let rect = proxy[anchor]
+                    let planeRect = animator.initialPlanePosition
+                    Image("Airplane")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: planeRect.width, height: planeRect.height)
+                        .offset(x: planeRect.minX, y: planeRect.minY)
+                        /// Moving Plane a bit dow to look like its center when the 3D Animation is Happening
+                        .offset(y: animator.startAnimation ? 50 : 0)
+                        .onAppear {
+                            animator.initialPlanePosition = rect
+                        }
+                }
+            }
+        })
         .background {
             Color("BG")
                 .ignoresSafeArea()
@@ -80,6 +113,11 @@ struct Home: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(height: 160)
+                /// Hiding the Original On
+                .opacity(0)
+                .anchorPreference(key: RectKey.self, value: .bounds, transform: { anchor in
+                    return ["PLANEBOUNDS": anchor]
+                })
                 .padding(.bottom, -5)
             
         }
@@ -93,6 +131,9 @@ struct Home: View {
                     Color("BlueTop"),
                 ], startPoint: .top, endPoint: .bottom))
         }
+        // MARK: Applying 3D Rotation : Header Will Disappeared
+        .rotation3DEffect(.init(degrees: animator.startAnimation ? 90 : 0), axis: (x: 1, y: 0, z: 0), anchor: .init(x: 0.5, y: 0.8))
+        .offset(y: animator.startAnimation ? -100 : 0)
     }
     
     // MARK: Credit Card View
@@ -130,9 +171,7 @@ struct Home: View {
                     .allowsHitTesting(false)
                 
                 // MARK: Purchase Button
-                Button {
-                    
-                } label: {
+                Button(action: buyTicket){
                     Text("Confirm $1,536.00")
                         .font(.callout)
                         .fontWeight(.semibold)
@@ -179,6 +218,23 @@ struct Home: View {
             Color.white
                 .ignoresSafeArea()
         }
+        /// Applying 3D Rotation: Card Section
+        .rotation3DEffect(.init(degrees: animator.startAnimation ? -90: 0), axis: (x: 1, y: 0, z: 0), anchor: .init(x: 0.5, y: 0.25))
+        .offset(y: animator.startAnimation ? 100 : 0)
+        
+    }
+    
+    func buyTicket() {
+        
+        /// Animating Content
+        withAnimation(.easeInOut(duration: 0.85)) {
+            animator.startAnimation = true
+        }
+        
+        /// Showing Loading View After Some time
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            animator.showLoadingView = true
+        }
     }
     
     // MARK: Card View
@@ -209,6 +265,87 @@ struct Home: View {
             print(index)
         }
     }
+    
+    // MARK: Background Loading View with Ring Animations
+    @ViewBuilder
+    func BackgroundView() -> some View {
+        VStack {
+            /// Payment Status
+            VStack(spacing: 0) {
+                ForEach(PaymentStatus.allCases, id: \.rawValue) { status in
+                    Text(status.rawValue)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.gray.opacity(0.5))
+                        .frame(height: 30)
+                }
+            }
+            .offset(y: animator.currentPaymentStatus == .started ? -30 : animator.currentPaymentStatus == .finished ? -60 : 0)
+            .frame(height: 30, alignment: .top)
+            .clipped()
+            .zIndex(1)
+            
+            ZStack {
+                
+                /// Ring 1
+                Circle()
+                    .fill(Color("BG"))
+                    .shadow(color: .white.opacity(0.45), radius: 5, x: 5, y: 5)
+                    .shadow(color: .white.opacity(0.45), radius: 5, x: -5, y: -5)
+                    .scaleEffect(animator.ringAnimation[0] ? 5 : 1)
+                    .opacity(animator.ringAnimation[0] ? 0 : 1)
+                
+                /// Ring 2
+                Circle()
+                    .fill(Color("BG"))
+                    .shadow(color: .white.opacity(0.45), radius: 5, x: 5, y: 5)
+                    .shadow(color: .white.opacity(0.45), radius: 5, x: -5, y: -5)
+                    .scaleEffect(animator.ringAnimation[1] ? 5 : 1)
+                    .opacity(animator.ringAnimation[1] ? 0 : 1)
+                
+                Circle()
+                    .fill(Color("BG"))
+                    .shadow(color: .black.opacity(0.1), radius: 5, x: 5, y: 5)
+                    .shadow(color: .black.opacity(0.1), radius: 5, x: -5, y: -5)
+                    .scaleEffect(1.22)
+                
+                Circle()
+                    .fill(.white)
+                    .shadow(color: .black.opacity(0.1), radius: 5, x: 5, y: 5)
+                
+                Image(systemName: animator.currentPaymentStatus.symbolImage)
+                    .font(.largeTitle)
+                    .foregroundColor(.gray.opacity(0.5))
+            }
+            .frame(width: 80, height: 80)
+            .padding(.top, 20)
+            .zIndex(0)
+        }
+        // Using Timer to Stimulate Loading Effect
+        .onReceive(Timer.publish(every: 2.3, on: .main, in: .common).autoconnect()) { _ in
+            
+            withAnimation(.easeInOut(duration: 0.3)) {
+                if animator.currentPaymentStatus == .inititated {
+                    animator.currentPaymentStatus = .started
+                } else {
+                    animator.currentPaymentStatus = .finished
+                }
+            }
+        }
+        .onAppear(perform: {
+            withAnimation(.linear(duration: 2.5).repeatForever(autoreverses: false)) {
+                animator.ringAnimation[0] = true
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                withAnimation(.linear(duration: 2.5).repeatForever(autoreverses: false)) {
+                    animator.ringAnimation[1] = true
+                }
+            }
+        })
+        .frame(maxHeight: .infinity, alignment: .bottom)
+        .padding(.bottom, size.height * 0.15)
+    }
 }
 
 struct Home_Previews: PreviewProvider {
@@ -217,198 +354,30 @@ struct Home_Previews: PreviewProvider {
     }
 }
 
-struct FlightDetailsView: View {
-    var alignment: HorizontalAlignment = .leading
-    var place: String
-    var code: String
-    var timing: String
+// MARK: ObservableObject that holds all animation properties
+class Animator: ObservableObject {
+    /// Animation Properties
+    @Published var startAnimation: Bool = false
     
-    var body: some View {
-        VStack(alignment: alignment, spacing: 6) {
-            Text(place)
-                .font(.caption)
-                .foregroundColor(.white.opacity(0.8))
-            
-            Text(code)
-                .font(.title)
-                .foregroundColor(.white)
-            
-            Text(timing)
-                .font(.caption)
-                .foregroundColor(.white.opacity(0.8))
-        }
-        .frame(maxWidth: .infinity)
-    }
+    /// Initial Plane position
+    @Published var initialPlanePosition: CGRect = .zero
+    
+    @Published var currentPaymentStatus: PaymentStatus = .inititated
+    
+    /// Ring Status
+    @Published var ringAnimation: [Bool] = [false, false]
+    
+    ///  Loading Status
+    @Published var showLoadingView: Bool = false
 }
 
-// MARK: Degail View UI
-struct DetailView: View {
-    
-    var size: CGSize
-    var safeArea: EdgeInsets
-    
-    var body: some View {
-        VStack {
-            VStack(spacing: 0) {
-                VStack {
-                    Image("Logo")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 100)
-                    
-                    Text("Your order has submitted")
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .padding(.top, 10)
-                    
-                    Text("We are waiting for booking confirmation")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.8))
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 30)
-                .padding(.bottom, 40)
-                .background {
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .fill(.white.opacity(0.5))
-                }
-                
-                HStack {
-                    FlightDetailsView(place: "Los Angeles", code: "LAS", timing: "23 Nov, 03:30")
-                    
-                    VStack(spacing: 8) {
-                        Image(systemName: "chevron.right")
-                            .font(.title2)
-                        
-                        Text("5h 15m")
-                    }
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    
-                    FlightDetailsView(alignment: .trailing, place: "New York", code: "NYC", timing: "23 Nov, 07:15")
-                }
-                .padding(15)
-                .padding(.bottom, 70)
-                .background {
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .fill(.ultraThinMaterial)
-                }
-                .padding(.top, -20)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, safeArea.top + 15)
-            .padding([.horizontal, .bottom], 15)
-            .background {
-                Rectangle()
-                    .fill(Color("BlueTop"))
-                    .padding(.bottom, 80)
-            }
-            
-            // MARK: Contact Information View
-            GeometryReader { proxy in
-                
-                /// For Smaller Device Adoption
-                ViewThatFits {
-                    ContactInformation()
-                    ScrollView(.vertical, showsIndicators: false) {
-                        ContactInformation()
-                    }
-                }
-            }
-        }
-    }
-    
-    @ViewBuilder
-    func ContactInformation() -> some View {
-        VStack(spacing: 15) {
-            HStack {
-                InfoView(title: "Flight", subtitle: "AR 580")
-                InfoView(title: "Class", subtitle: "Premium")
-                InfoView(title: "Aircraft", subtitle: "B 737-900")
-                InfoView(title: "Possibility", subtitle: "AR 580")
-            }
-            
-            ContactView(name: "SEUNGCHUL HA", email: "alaxhenry0121@gmail.com", profile: "User1")
-                .padding(.top, 30)
-            
-            ContactView(name: "JESSICA HO", email: "jessiho@gmail.com", profile: "User2")
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Total Price")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.gray)
-                
-                Text("$1,536.00")
-                    .fontWeight(.semibold)
-                    .foregroundColor(.black)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 20)
-            .padding(.leading, 15)
-            
-            // MARK: Home Screen Button
-            Button {
-                
-            } label: {
-                Text("Go to Home Screen")
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 30)
-                    .padding(.vertical, 10)
-                    .background {
-                        Capsule()
-                            .fill(Color("BlueTop").gradient)
-                    }
-            }
-            .padding(.top, 15)
-            .frame(maxHeight: .infinity, alignment: .bottom)
-            .padding(.bottom, safeArea.bottom)
-        }
-        .padding(15)
-        .padding(.top, 20)
-    }
-    
-    // MARK: Contact View
-    @ViewBuilder
-    func ContactView(name: String, email: String, profile: String) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(name)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.black)
-                
-                Text(email)
-                    .font(.callout)
-                    .foregroundColor(.gray)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            
-            Image(profile)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 45, height: 45)
-                .clipShape(Circle())
-        }
-        .padding(.horizontal, 15)
-    }
-    
-    // MARK: Info
-    @ViewBuilder
-    func InfoView(title: String, subtitle: String) -> some View {
-        
-        VStack(alignment: .center, spacing: 4) {
-            Text(title)
-                .font(.caption2)
-                .fontWeight(.semibold)
-                .foregroundColor(.gray)
-            
-            Text(subtitle)
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(.black)
-        }
-        .frame(maxWidth: .infinity)
+// MARK: Anchor Preference Key
+/// Sice the Flight Image rotates when 3D animation on Header is applied,
+/// we must first detremine its precise location on the screen in order to add the same image as an overlay.
+/// Using AnchorPreference, we can recover its precise location on the screen.
+struct RectKey: PreferenceKey {
+    static var defaultValue: [String: Anchor<CGRect>] = [:]
+    static func reduce(value: inout [String : Anchor<CGRect>], nextValue: () -> [String : Anchor<CGRect>]) {
+        value.merge(nextValue()){$1}
     }
 }

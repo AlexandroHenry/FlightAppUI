@@ -13,6 +13,9 @@
 		AA3D680629519D690092E2D6 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA3D680529519D690092E2D6 /* Preview Assets.xcassets */; };
 		AA3D680E2951AAA90092E2D6 /* Home.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA3D680D2951AAA90092E2D6 /* Home.swift */; };
 		AA3D68112951B4600092E2D6 /* Card.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA3D68102951B4600092E2D6 /* Card.swift */; };
+		AA3D68132952AB3D0092E2D6 /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA3D68122952AB3D0092E2D6 /* DetailView.swift */; };
+		AA3D68152952ABB40092E2D6 /* FlightDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA3D68142952ABB40092E2D6 /* FlightDetailsView.swift */; };
+		AA3D68172952B5810092E2D6 /* PaymentStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA3D68162952B5810092E2D6 /* PaymentStatus.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,6 +26,9 @@
 		AA3D680529519D690092E2D6 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		AA3D680D2951AAA90092E2D6 /* Home.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Home.swift; sourceTree = "<group>"; };
 		AA3D68102951B4600092E2D6 /* Card.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Card.swift; sourceTree = "<group>"; };
+		AA3D68122952AB3D0092E2D6 /* DetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailView.swift; sourceTree = "<group>"; };
+		AA3D68142952ABB40092E2D6 /* FlightDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlightDetailsView.swift; sourceTree = "<group>"; };
+		AA3D68162952B5810092E2D6 /* PaymentStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentStatus.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -77,6 +83,8 @@
 			isa = PBXGroup;
 			children = (
 				AA3D680D2951AAA90092E2D6 /* Home.swift */,
+				AA3D68122952AB3D0092E2D6 /* DetailView.swift */,
+				AA3D68142952ABB40092E2D6 /* FlightDetailsView.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -84,6 +92,7 @@
 		AA3D680F2951B44E0092E2D6 /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				AA3D68162952B5810092E2D6 /* PaymentStatus.swift */,
 				AA3D68102951B4600092E2D6 /* Card.swift */,
 			);
 			path = Model;
@@ -160,8 +169,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA3D680129519D660092E2D6 /* ContentView.swift in Sources */,
+				AA3D68172952B5810092E2D6 /* PaymentStatus.swift in Sources */,
+				AA3D68152952ABB40092E2D6 /* FlightDetailsView.swift in Sources */,
 				AA3D680E2951AAA90092E2D6 /* Home.swift in Sources */,
 				AA3D67FF29519D660092E2D6 /* FlightAppUIApp.swift in Sources */,
+				AA3D68132952AB3D0092E2D6 /* DetailView.swift in Sources */,
 				AA3D68112951B4600092E2D6 /* Card.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

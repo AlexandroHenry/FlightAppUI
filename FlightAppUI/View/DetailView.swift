@@ -13,6 +13,8 @@ struct DetailView: View {
     var size: CGSize
     var safeArea: EdgeInsets
     
+    @EnvironmentObject var animator: Animator
+    
     var body: some View {
         VStack {
             VStack(spacing: 0) {
@@ -65,11 +67,14 @@ struct DetailView: View {
             .padding(.horizontal, 20)
             .padding(.top, safeArea.top + 15)
             .padding([.horizontal, .bottom], 15)
+            .offset(y: animator.showFinalView ? 0 : 300)
             .background {
                 Rectangle()
                     .fill(Color("BlueTop"))
+                    .scaleEffect(y: animator.showFinalView ? 1 : 0.001, anchor: .top)
                     .padding(.bottom, 80)
             }
+            .clipped()
             
             // MARK: Contact Information View
             GeometryReader { proxy in
@@ -81,8 +86,10 @@ struct DetailView: View {
                         ContactInformation()
                     }
                 }
+                .offset(y: animator.showFinalView ? 0 : size.height)
             }
         }
+        .animation(.easeInOut(duration: animator.showFinalView ? 0.7 : 0.3).delay(animator.showFinalView ? 0.7 : 0), value: animator.showFinalView)
     }
     
     @ViewBuilder
@@ -116,7 +123,7 @@ struct DetailView: View {
             
             // MARK: Home Screen Button
             Button {
-                
+                resetAnimationAndView()
             } label: {
                 Text("Go to Home Screen")
                     .fontWeight(.semibold)
@@ -176,6 +183,25 @@ struct DetailView: View {
                 .foregroundColor(.black)
         }
         .frame(maxWidth: .infinity)
+    }
+    
+    /// Resetting Animation
+    func resetAnimationAndView() {
+        
+        animator.currentPaymentStatus = .started
+        animator.showClouds = false
+        withAnimation(.easeInOut(duration: 0.3)) {
+            animator.showFinalView = false
+        }
+        
+        animator.ringAnimation = [false, false]
+        animator.showLoadingView = false
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            withAnimation(.easeInOut) {
+                animator.startAnimation = false
+            }
+        }
     }
 }
 

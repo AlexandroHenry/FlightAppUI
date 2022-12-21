@@ -70,7 +70,17 @@ struct Home: View {
                 if animator.showLoadingView {
                     BackgroundView()
                         .transition(.scale)
+                        .opacity(animator.showFinalView ? 0 : 1)
                 }
+            }
+        })
+        // When ever the final View Shows up disabling the actions on the Overlayed View
+        .allowsHitTesting(!animator.showFinalView)
+        .background(content: {
+            /// Safety Check
+            if animator.startAnimation {
+                DetailView(size: size, safeArea: safeArea)
+                    .environmentObject(animator)
             }
         })
         .overlayPreferenceValue(RectKey.self, { value in
@@ -82,21 +92,26 @@ struct Home: View {
                     let rect = proxy[anchor]
                     let planeRect = animator.initialPlanePosition
                     let status = animator.currentPaymentStatus
-                    let animationStatus = status == .finished
+                    
+                    /// Resetting Plane When it Final View Opens
+                    let animationStatus = status == .finished && !animator.showFinalView
+                    
                     Image("Airplane")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: planeRect.width, height: planeRect.height)
                         /// Flight Movement Animation
                         .rotationEffect(.init(degrees: animationStatus ? -10 : 0))
-                        .shadow(color: .black.opacity(0.25), radius: 1, x: animationStatus ? -430 : 0, y: animationStatus ? 170 : 0)
+                        .shadow(color: .black.opacity(0.25), radius: 1, x: status == .finished ? -430 : 0, y: status == .finished ? 170 : 0)
                         .offset(x: planeRect.minX, y: planeRect.minY)
                         /// Moving Plane a bit dow to look like its center when the 3D Animation is Happening
                         .offset(y: animator.startAnimation ? 50 : 0)
+                        .scaleEffect(animator.showFinalView ? 0.9 : 1)
+                        .offset(y: animator.showFinalView ? 30 : 0)
                         .onAppear {
                             animator.initialPlanePosition = rect
                         }
-                        .animation(.easeInOut(duration: animationStatus ? 3.5 : 2.5), value: animationStatus)
+                        .animation(.easeInOut(duration: animationStatus ? 3.5 : 1.5), value: animationStatus)
                 }
             }
         })
@@ -119,7 +134,9 @@ struct Home: View {
                 
                 /// Enabling Final View After Some Time
                 DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                    
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        animator.showFinalView = true
+                    }
                 }
             }
         }
@@ -262,6 +279,7 @@ struct Home: View {
             Color.white
                 .ignoresSafeArea()
         }
+        .clipped()
         /// Applying 3D Rotation: Card Section
         .rotation3DEffect(.init(degrees: animator.startAnimation ? -90: 0), axis: (x: 1, y: 0, z: 0), anchor: .init(x: 0.5, y: 0.25))
         .offset(y: animator.startAnimation ? 100 : 0)
@@ -312,7 +330,7 @@ struct Home: View {
         }
     }
     
-    // MARK: Background Loading View with Ring Animations
+    // MARK: Background Loading View with Ring Animations -> Airplane Lift off
     @ViewBuilder
     func BackgroundView() -> some View {
         VStack {
@@ -416,7 +434,7 @@ struct CloudView: View {
         }
         .onAppear {
             /// Duration  = Speed of The Move ment of the Cloud
-            withAnimation(.easeInOut(duration: 6.5).delay(delay)) {
+            withAnimation(.easeInOut(duration: 5.5).delay(delay)) {
                 moveCloud.toggle()
             }
         }
